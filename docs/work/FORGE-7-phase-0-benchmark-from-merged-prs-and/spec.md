@@ -121,7 +121,9 @@ resolved 40%" would be the agent grading itself.
 ## Assumptions
 
 - Spend cap of 150 USD for all Phase 0 paid runs, owner's OpenAI key (recorded under the owner's delegation, FORGE-10).
-- Task environments are Docker containers (Docker Desktop is installed on this machine; the engine must be running).
+- Task environments are Docker containers on a disposable GitHub Actions `ubuntu-latest` runner, started by hand
+  (`workflow_dispatch`). The owner's laptop has hardware virtualization off, so Docker can't run locally; local runs use
+  the offline executor only (amendment 2, `notes.md`).
 - The two public repositories are chosen in the plan by these criteria: Python, permissive licence, pytest, at least 15
   candidate PRs in the last 18 months.
 - One run per task; variance is reported as a limitation, not measured.

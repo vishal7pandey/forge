@@ -22,3 +22,11 @@ Phase 0 report states it.
 The owner's OpenAI key is stored once in Windows Credential Manager (service `forge`, user `OPENAI_API_KEY`), copied from
 chatpid's `.env` at the owner's request without being displayed. Worktrees need no `.env`. The spec's security NFR now
 allows the OS credential store as a source; the plan adds `forge.secrets` and the `keyring` dependency.
+
+## Amendment 2 (2026-10-19): containers run on GitHub Actions, not the laptop
+
+**Why:** hardware virtualization is off in the laptop's firmware, so Docker Desktop can't start. The owner asked to move
+past Docker for now. **What changed:** the spec's environment assumption (disposable Docker containers) now names a
+GitHub Actions `ubuntu-latest` runner as the host; the plan adds T10b (a `workflow_dispatch` workflow, key as an Actions
+secret). Everything in PR A stays offline and unchanged. If virtualization is enabled later, the same `DockerExecutor`
+runs locally; nothing else changes.

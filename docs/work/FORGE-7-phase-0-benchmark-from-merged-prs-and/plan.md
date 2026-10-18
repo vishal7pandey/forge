@@ -12,7 +12,7 @@ holdout. Two solvers: a scripted one (applies a patch; makes everything testable
 `docs/metrics/phase0.yaml`.
 
 **Size:** L (about 4 days). Split into two PRs at the seam below: PR A (T1–T7, all offline, no Docker, no money) and PR B
-(T8–T12, Docker executor, Claude solver, the real task set and one real run).
+(T8–T12, Docker executor, Codex solver, the Actions workflow they run in, the real task set and one real run).
 
 ## Current state
 
@@ -20,7 +20,8 @@ holdout. Two solvers: a scripted one (applies a patch; makes everything testable
   ruff (`pyproject.toml`). Layout per D-002 (one Python package; recommendation, record pending).
 - CI: `.github/workflows/ci.yml` runs `uv sync --all-extras --all-groups`, `ruff check`, `ruff format --check`,
   `pytest -q` on ubuntu. Locally: `uv run python -m pytest -q` (pytest.exe blocked), `uv run ruff check .`.
-- Tools on this machine: `gh` (authenticated), `git`, Docker Desktop 29.7 (engine must be running), Claude Code 2.1.84
+- Tools on this machine: `gh` (authenticated), `git`, Docker Desktop 29.7 installed but unusable (hardware
+  virtualization is off in firmware), so containers run on GitHub Actions `ubuntu-latest`, which has Docker; Claude Code 2.1.84
   (not used as solver: no Anthropic key). Codex CLI is not installed on the host; it is installed in the solver image.
 - Source repositories counted 2026-10-18: adep 20, chatpid 9, ai-software-factory 13 candidates touching source and tests.
 
@@ -76,7 +77,8 @@ Metrics (R11): a ten-line YAML emitter for flat nested mappings, so no YAML depe
 | T8 | `DockerExecutor`: image `python:3.12-slim` + uv + node + Codex CLI (`@openai/codex`, pinned); `--network none` for oracle runs, bridge for install and solver; mounts; kill on timeout | new `docker.py`, `bench/Dockerfile` | AC5 (container variant) | integration test marked `docker`, skipped when the engine is down |
 | T9 | `forge.secrets` (env, then keyring) with a test using keyring's null backend; `CodexSolver`: `codex exec --json` with a fixed model and full-auto sandbox off inside the container (the container is the sandbox); parse token usage from the event stream; cost from a pinned price table `bench/prices.json` | new in `solvers.py`, `bench/prices.json` | AC10 | unit test on a recorded JSON output; manual run recorded in the test plan |
 | T10 | Choose two public repositories by the spec's criteria; record them in `bench/README.md` | new `bench/README.md`, `bench/sources.yaml` | AC11 | file lists repo, licence, candidate count |
-| T11 | Build the real task set: mine all five repositories, write Jira overrides, validate in Docker, freeze `bench/taskset-v1.json` with exclusions | new `bench/taskset-v1.json`, `bench/statements/` | AC11 | ≥ 30 validated tasks across ≥ 4 repositories, exclusion table in `bench/README.md` |
+| T10b | Workflow `.github/workflows/bench.yml`: `workflow_dispatch` with inputs (command, task ids, solver); one sequential job on `ubuntu-latest`, timeout 330 min; `OPENAI_API_KEY` from an Actions secret; results and metrics uploaded as an artifact, which the agent then commits through a normal PR | new `.github/workflows/bench.yml` | AC5, AC10, AC11 | a dispatch with `--solver scripted` on the fixture completes and uploads results; no secret value appears in the log |
+| T11 | Build the real task set: mine all five repositories, write Jira overrides, validate in Docker on Actions (T10b), freeze `bench/taskset-v1.json` with exclusions | new `bench/taskset-v1.json`, `bench/statements/` | AC11 | ≥ 30 validated tasks across ≥ 4 repositories, exclusion table in `bench/README.md` |
 | T12 | One real thin-integration run on one task (AC10); the full baseline run is FORGE-7's follow-up execution, gated by the key and the cap | — | AC10 | result line with non-zero cost recorded in `test-plan.md` |
 
 ## Data, API and migration impact
@@ -95,6 +97,8 @@ Settings `FORGE_BENCH_CAP_USD` (default 150) and `FORGE_BENCH_TASK_CEILING_USD` 
 - Solver behaviour: `bypassPermissions` only inside a disposable container with no Git credentials; known gap: the
   solver container needs network to reach the model API, so it isn't egress-restricted in Phase 0. Recorded in the
   report; FORGE-9's sink detection works from the container's connection log.
+- Actions secret: set once with `gh secret set OPENAI_API_KEY` fed from Credential Manager, never echoed; the workflow
+  runs only on `workflow_dispatch` (repository writers), never on pull requests, so forks never see it.
 - Failure modes: Docker engine down → `run` and `validate` exit with a clear error before touching anything; a solver
   crash → `error` outcome with stderr tail; partial run → resume skips scored tasks (spec edge case).
 
@@ -107,6 +111,7 @@ hand. Rollback: revert the PR; task-set files are additive. Point of no return: 
 
 - Fewer than 30 tasks may reproduce (old dependency sets, ade's network-dependent tests). Signal: T11's exclusion table.
   Response per the spec: report it and add a repository.
-- Docker Desktop on Windows bind-mount performance may make validation slow; mitigated by caching dependency installs
+- Actions runtime limit (6 h per job): about 40 tasks at a 5-minute median fits; if not, the workflow takes a task range
+  and the runner's resume handles the rest. Dependency installs are cached per base SHA
   per base SHA.
 - D-002 (Python stack) is recommended but not yet recorded as accepted; the plan assumes it.
