@@ -2,19 +2,21 @@
 id: D-001
 type: charter
 title: Approve the Forge Phase 0 charter
-status: proposed
+status: accepted
 jira: FORGE-2
 proposed_by: agent
 proposed_at: '2026-10-18'
 options:
 - text: Approve the Phase 0 charter in docs/PROJECT.md as written
   recommended: true
-- text: Replace it with a full Slice 1 charter (gateway, sandboxed run, policy, check run, benchmark, exit bar)
-decision: null
-by: null
-at: null
+- text: Replace it with a full Slice 1 charter (gateway, sandboxed run, policy, check
+    run, benchmark, exit bar)
+decision: Approve the Phase 0 charter in docs/PROJECT.md as written
+by: Vishal Pandey
+at: '2026-10-18'
 delegated: false
 subject: docs/PROJECT.md
+subject_sha256: 11daf0d81cffc1050d7ff841832c443ce49b3c4ca55a8695e18b75ee5a3c1ee1
 ---
 # Approve the Forge Phase 0 charter
 
