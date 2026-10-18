@@ -2,18 +2,23 @@
 id: D-002
 type: design
 title: Slice 1 stack and repo layout
-status: proposed
+status: accepted
 jira: FORGE-3
 proposed_by: agent
 proposed_at: '2026-10-18'
 options:
-- text: One Python package for the slice (src/forge/<component>), split later behind the published interfaces
+- text: One Python package for the slice (src/forge/<component>), split later behind
+    the published interfaces
   recommended: true
-- text: Multi-language monorepo now (Go services, Python agent, Next.js web, shared contracts)
-decision: null
-by: null
-at: null
-delegated: false
+- text: Multi-language monorepo now (Go services, Python agent, Next.js web, shared
+    contracts)
+decision: One Python package for the slice (src/forge/<component>), split later behind
+  the published interfaces
+by: Vishal Pandey (delegated to agent)
+at: '2026-10-18'
+delegated: true
+note: Owner tried to accept on 2026-10-18 (answer mistyped), then transferred ownership
+  and stewardship of forge to the agents the same day; recorded under that delegation.
 ---
 # Slice 1 stack and repo layout
 
