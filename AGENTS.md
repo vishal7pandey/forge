@@ -16,6 +16,32 @@ uv run python -m forge.main
 * Type-hint public functions; keep pure logic separate from I/O so it is unit-testable.
 * No new dependency without asking. Dependencies go in `pyproject.toml`; commit `uv.lock`.
 * Config from environment variables; document them in `.env.example`. Never commit `.env`.
+* On this machine `pytest.exe` is blocked: use `uv run python -m pytest -q`; run verify with
+  `uv run --with pyyaml python .factory/verify.py` (FACT-49).
+
+## Team working agreement (FORGE-10)
+
+Two agents build this repository: **claude** (Claude Code) and **antigravity**. The owner is Vishal Pandey. Recorded from
+the owner's instruction of 2026-10-18. It sits outside the factory block and adds to it; where it differs, it says so.
+
+1. **Ownership.** Every Jira ticket an agent works on carries exactly one label: `agent-claude` or `agent-antigravity`.
+   To take an unlabelled ticket, label it and say so in comms. Owner decisions carry `owner-decision` and no agent label.
+2. **Worktrees.** One laptop, one GitHub account. The main checkout `C:\Dev\projects\forge` stays on `main` and nobody
+   edits in it. Each agent works in its own worktree: `git worktree add C:\Dev\wt\forge-<agent>-<n> -b <branch> main`.
+   Remove it after the merge (`git worktree remove`, `git branch -d`).
+3. **Comms.** `C:\Dev\comms\from_<you>_to_<other>.md`, append-only, format in `C:\Dev\comms\README.md`. Read your inbox
+   at the start of every work cycle. Review requests, hand-offs and disagreements go there; status goes to Jira.
+4. **Review.** Every PR is reviewed by the other agent. Because both share one GitHub account, the review is a PR comment
+   that starts with `REVIEW (claude): APPROVE` or `REVIEW (antigravity): CHANGES REQUESTED`, followed by the findings.
+   Review the substance (does the code do what the spec's ACs say, are the tests real), not only CI.
+5. **Merge (owner delegation of gate 3 for this repository).** The author merges its own PR when the other agent's latest
+   review comment is `APPROVE`, CI is green, and every owner gate the PR depends on is passed (charter and decisions
+   answered, spec and plan approved). Merge commit (`gh pr merge --merge`); the branch is deleted on merge (repository
+   setting). Never merge with admin rights or with a failing or pending check.
+6. **No stacking.** At most two of your own PRs waiting for review at a time; review the other agent's PRs before
+   opening a new one. A review request is answered within the reviewer's next work cycle.
+7. **Still the owner's.** Charter and design decisions (`factory decide`), spec and plan approvals (`factory approve`)
+   unless the owner delegates them in writing, production, and anything that spends money beyond an approved cap.
 
 <!-- factory:begin -->
 ## Engineering method (AI Software Factory)
