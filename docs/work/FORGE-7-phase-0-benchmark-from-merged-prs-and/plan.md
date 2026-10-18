@@ -8,7 +8,7 @@ Created: 2026-10-18 · Slug: phase-0-benchmark-from-merged-prs-and · Spec: spec
 A new package `forge.bench` that mines merged PRs into candidate tasks, validates them in Docker (fail before, pass after,
 holdout hidden), freezes a versioned task set, runs a solver per task in a disposable container, and scores against the
 holdout. Two solvers: a scripted one (applies a patch; makes everything testable offline) and the thin integration
-(Claude Code headless). A command line `python -m forge.bench` drives it; results go to JSON Lines and
+(Codex CLI headless, with the owner's OpenAI key; amendment 1). A command line `python -m forge.bench` drives it; results go to JSON Lines and
 `docs/metrics/phase0.yaml`.
 
 **Size:** L (about 4 days). Split into two PRs at the seam below: PR A (T1–T7, all offline, no Docker, no money) and PR B
@@ -21,7 +21,7 @@ holdout. Two solvers: a scripted one (applies a patch; makes everything testable
 - CI: `.github/workflows/ci.yml` runs `uv sync --all-extras --all-groups`, `ruff check`, `ruff format --check`,
   `pytest -q` on ubuntu. Locally: `uv run python -m pytest -q` (pytest.exe blocked), `uv run ruff check .`.
 - Tools on this machine: `gh` (authenticated), `git`, Docker Desktop 29.7 (engine must be running), Claude Code 2.1.84
-  with `-p`, `--output-format json`, `--max-budget-usd`, `--model`, `--permission-mode bypassPermissions`.
+  (not used as solver: no Anthropic key). Codex CLI is not installed on the host; it is installed in the solver image.
 - Source repositories counted 2026-10-18: adep 20, chatpid 9, ai-software-factory 13 candidates touching source and tests.
 
 ## Approach
@@ -46,8 +46,9 @@ own install command if no `uv.lock`), then run the oracle twice with network off
 `no_fail_to_pass`, `solution_fails`, `env_unreproducible`, `needs_network`, `flaky`, `no_tests_found`.
 
 Run (R6–R10): per task, a fresh copy at base SHA with holdout files deleted and `.git` remotes removed; dependencies
-installed; the solver runs with env `{ANTHROPIC_API_KEY}` only (plus `PATH`, `HOME`), wall-time limit, and
-`--max-budget-usd` = the per-task ceiling as a second line behind the runner's cap. Then holdout restored, oracle and
+installed; the solver runs with env `{OPENAI_API_KEY}` only (plus `PATH`, `HOME`) and a wall-time limit. Codex CLI has
+no spend flag, so the runner reads its `--json` event stream, prices token usage as it arrives, and stops the container
+when the task's cost reaches the per-task ceiling: a second line behind the runner's total cap. Then holdout restored, oracle and
 regression set run with network off, outcome scored. The budget ledger is the results file itself: the runner sums
 recorded cost before each task (R10).
 
@@ -72,8 +73,8 @@ Metrics (R11): a ten-line YAML emitter for flat nested mappings, so no YAML depe
 | T6 | Task environment preparation (holdout removed, remotes stripped, env allow-list) and scoring with regression set; `ScriptedSolver`; `touched_tests` | new `environment.py`, `score.py`, `solvers.py` | AC5, AC6, AC7 | `test_env_has_no_holdout_and_no_credentials`, three scoring tests, `test_touched_tests_flag` |
 | T7 | Runner loop with spend cap and resume; results JSONL; metrics YAML; CLI `python -m forge.bench {mine,validate,build,run,report}` | new `runner.py`, `metrics.py`, `__main__.py` | AC8, AC9 | `test_cap_stops_new_tasks`, `test_metrics_after_scripted_run`; charter check reads `baseline.tasks_run` |
 | — | **PR A ends here** (offline only; CI covers all of it) | | | CI green; reviewer runs `python -m forge.bench run --solver scripted` on the fixture |
-| T8 | `DockerExecutor`: image `python:3.12-slim` + uv + node + Claude Code; `--network none` for oracle runs, bridge for install and solver; mounts; kill on timeout | new `docker.py`, `bench/Dockerfile` | AC5 (container variant) | integration test marked `docker`, skipped when the engine is down |
-| T9 | `ClaudeCodeSolver`: `claude -p --output-format json --model <fixed> --permission-mode bypassPermissions --max-budget-usd <ceiling>`, parse cost and tokens | new in `solvers.py` | AC10 | unit test on a recorded JSON output; manual run recorded in the test plan |
+| T8 | `DockerExecutor`: image `python:3.12-slim` + uv + node + Codex CLI (`@openai/codex`, pinned); `--network none` for oracle runs, bridge for install and solver; mounts; kill on timeout | new `docker.py`, `bench/Dockerfile` | AC5 (container variant) | integration test marked `docker`, skipped when the engine is down |
+| T9 | `CodexSolver`: `codex exec --json` with a fixed model and full-auto sandbox off inside the container (the container is the sandbox); parse token usage from the event stream; cost from a pinned price table `bench/prices.json` | new in `solvers.py`, `bench/prices.json` | AC10 | unit test on a recorded JSON output; manual run recorded in the test plan |
 | T10 | Choose two public repositories by the spec's criteria; record them in `bench/README.md` | new `bench/README.md`, `bench/sources.yaml` | AC11 | file lists repo, licence, candidate count |
 | T11 | Build the real task set: mine all five repositories, write Jira overrides, validate in Docker, freeze `bench/taskset-v1.json` with exclusions | new `bench/taskset-v1.json`, `bench/statements/` | AC11 | ≥ 30 validated tasks across ≥ 4 repositories, exclusion table in `bench/README.md` |
 | T12 | One real thin-integration run on one task (AC10); the full baseline run is FORGE-7's follow-up execution, gated by the key and the cap | — | AC10 | result line with non-zero cost recorded in `test-plan.md` |
@@ -81,12 +82,12 @@ Metrics (R11): a ten-line YAML emitter for flat nested mappings, so no YAML depe
 ## Data, API and migration impact
 
 New package and CLI only. New files under `bench/` (task set, statements, README) and `docs/metrics/phase0.yaml`. New
-environment variable `ANTHROPIC_API_KEY` (documented in `.env.example`, never committed), plus `FORGE_BENCH_CAP_USD`
+environment variable `OPENAI_API_KEY` (documented in `.env.example`, never committed), plus `FORGE_BENCH_CAP_USD`
 (default 150) and `FORGE_BENCH_TASK_CEILING_USD` (default 3). No dependency added to `pyproject.toml`. Nothing to migrate.
 
 ## Security and failure modes
 
-- Secrets: only `ANTHROPIC_API_KEY` reaches a solver container, read from the environment; the env allow-list is tested
+- Secrets: only `OPENAI_API_KEY` reaches a solver container, read from the environment; the env allow-list is tested
   (AC5). Results and logs never include environment values. The owner's `gh` token is used only by `GhPrSource` on the
   host for mining, never inside containers.
 - Untrusted code: candidate repositories' test suites run inside containers, oracle runs with network off.

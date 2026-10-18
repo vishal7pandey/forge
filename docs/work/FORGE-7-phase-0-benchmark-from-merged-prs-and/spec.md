@@ -24,7 +24,8 @@ resolved 40%" would be the agent grading itself.
 **Goals**
 - A versioned task set built from merged PRs, each task reproducibly failing before and passing after the original change.
 - A runner that gives a task to a *solver*, hides the oracle from it, and scores the result.
-- A thin-integration solver: Claude Code headless with the task repository's own `AGENTS.md` and skills.
+- A thin-integration solver: an existing coding-agent CLI run headless with the task repository's own `AGENTS.md`
+  and skills. Today that is Codex CLI with the owner's OpenAI key (amendment 1, `notes.md`).
 - Per-task and aggregate results the Phase 0 report and the charter metric read.
 
 **Non-goals**
@@ -54,11 +55,12 @@ resolved 40%" would be the agent grading itself.
 - R7. After the solver ends, the runner must restore the holdout files, run the oracle and the regression set, and score
   the task `resolved` only if the oracle passes and no regression test that passed on the base SHA fails.
 - R8. The runner must record per task: outcome (`resolved`, `unresolved`, `error`, `timeout`, `budget_exceeded`), wall
-  time, solver-reported cost in USD and tokens, model id, and whether the solver modified any file that matches a test
+  time, tokens as reported by the solver, cost in USD computed from those tokens and a versioned price table, model id, and whether the solver modified any file that matches a test
   path.
-- R9. The thin-integration solver must run Claude Code headless (`claude -p`) in the task environment with the
-  repository's own `AGENTS.md` and `.claude/skills/`, a fixed model, a per-task turn and time limit, and the task
-  statement as its only prompt.
+- R9. The thin-integration solver must run an existing coding-agent CLI headless in the task environment: Codex CLI
+  (`codex exec`) with the owner's OpenAI key, reading the repository's own `AGENTS.md`, which points to the factory skills
+  as files. It runs with a fixed model, a per-task time limit, and the task statement as its only prompt. The solver
+  interface must allow Claude Code (`claude -p`) to be added without changing the runner.
 - R10. Paid runs must have a hard total-spend cap enforced by the runner outside the solver: before starting a task the
   runner checks recorded spend plus a per-task ceiling against the cap and stops starting new tasks when it would be
   exceeded.
@@ -113,11 +115,11 @@ resolved 40%" would be the agent grading itself.
   results or logs; task environments never hold the owner's GitHub token; the solver runs with no network other than the
   model API where the platform allows (Docker network policy), otherwise the gap is recorded in the report.
 - Cost: total Phase 0 spend cap 150 USD (assumption below); per-task ceiling 3 USD.
-- Reproducibility: every result line carries task-set version, model id, Claude Code version and runner version.
+- Reproducibility: every result line carries task-set version, model id, solver CLI name and version, price-table version and runner version.
 
 ## Assumptions
 
-- Spend cap of 150 USD for all Phase 0 paid runs, owner's Anthropic key; the owner can change it at approval.
+- Spend cap of 150 USD for all Phase 0 paid runs, owner's OpenAI key (recorded under the owner's delegation, FORGE-10).
 - Task environments are Docker containers (Docker Desktop is installed on this machine; the engine must be running).
 - The two public repositories are chosen in the plan by these criteria: Python, permissive licence, pytest, at least 15
   candidate PRs in the last 18 months.
