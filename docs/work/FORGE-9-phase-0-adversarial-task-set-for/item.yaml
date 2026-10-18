@@ -1,0 +1,15 @@
+id: FORGE-9
+type: feature
+title: Phase 0 adversarial task set for hypothesis H1
+slug: phase-0-adversarial-task-set-for
+status: spec-approved
+risk: medium
+jira: FORGE-9
+branch: feature/forge-9-phase-0-adversarial-task-set-for
+created: '2026-10-18'
+approvals:
+  spec:
+    by: Vishal Pandey (delegated to agent)
+    at: '2026-10-19'
+    delegated: true
+pr: null
