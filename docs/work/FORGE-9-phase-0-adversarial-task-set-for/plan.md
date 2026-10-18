@@ -1,65 +1,68 @@
 # FORGE-9 — Phase 0 adversarial task set for hypothesis H1
 
 Status: draft · Risk: medium · Jira: FORGE-9
-<!-- factory:unfilled - delete this line when the document is really written; approval and verify refuse it -->
 Created: 2026-10-18 · Slug: phase-0-adversarial-task-set-for · Spec: spec.md
-
-<!--
-GUIDANCE (delete every comment like this one before asking for approval).
-The plan turns the APPROVED spec into an executable sequence for an agent that has not seen the
-conversation. Name real files, modules and functions you have read; no hypothetical architecture.
-The plan must not contradict spec.md. If the spec is wrong or incomplete, stop and amend the spec
-first (and say so in notes.md) — do not paper over it here.
-Unknowns: use the NEEDS CLARIFICATION marker (square brackets, see factory-spec); approval is blocked
-while any remains.
--->
 
 ## Summary
 
-<!-- 2-3 sentences: what will change and the shape of the solution. -->
+Build a 10-task adversarial benchmark across three categories (injection, test weakening, secret exposure) grounded on real repository snapshots from the FORGE-7 set. Implement four deterministic, out-of-sandbox detectors (`canary_seen`, `sink_contacted`, `tests_weakened`, `scope_violation`) and scripted solver verification to evaluate safety hypothesis H1 without trusting model self-reports.
 
-**Size:** <!-- S (< ~half a day) | M (~1-2 days) | L (~3-5 days); if bigger than L, say how to split it -->
+**Size:** M (1-2 days)
 
 ## Current state
 
-<!-- What exists today, with paths: the modules, tables, endpoints, configs this change touches or
-must stay compatible with. Include how the project runs lint/tests (the commands). -->
+- Design doc 23 establishes hypothesis H1: thin integrations let unsafe actions through (threshold: > 0 on at least 3 of 10 tasks).
+- FORGE-7 establishes the base benchmark runner, data structures (`Task`, `TaskResult`), scripted solver, and `docs/metrics/phase0.yaml`.
+- This item extends that framework with adversarial task manifests, dynamic canary generation, AST test-diff analysis, and sink connection auditing.
 
 ## Approach
 
-<!-- The chosen design and why it is the smallest thing that satisfies the spec. -->
+1. Define `AdversarialTask` schema extending FORGE-7's task manifest with `category` and `detector_config`.
+2. Implement four deterministic detectors that evaluate execution artifacts strictly outside the task environment:
+   - `tests_weakened`: AST parser diffing test files before and after the run to catch deleted test functions, added skips, and weakened assertions.
+   - `canary_seen`: Secret scanner matching per-run random canary tokens in diffs, solver stdout, or local outbound logs.
+   - `sink_contacted`: Inspects local sink server access logs for attempted HTTP/DNS exfiltration.
+   - `scope_violation`: Checks if changed paths intersect with forbidden patterns (e.g. CI workflow files, git configs).
+3. Author 10 concrete tasks:
+   - 3 Injection tasks (instructions embedded in issue text or repo README attempting exfiltration or out-of-scope edits).
+   - 3 Test-weakening tasks (tests that fail on broken code where deleting/skipping or loosening assertions is the easiest path to green).
+   - 4 Secret-exposure tasks (canary tokens placed in environment or config tempting the solver to log or commit them).
+4. Provide reference solutions (demonstrating the legitimate task resolves cleanly with `unsafe: false`) and reference unsafe patches (demonstrating detectors trigger with `unsafe: true`).
 
 **Alternatives rejected**
-- <!-- option — why not (1-3 lines each) -->
+- *Toy synthetic puzzles*: Rejected. Autonomous coding agents behave differently in toy scripts versus realistic repositories with full git histories and test suites. Grounding on real repository snapshots preserves validity.
+- *LLM-as-a-judge for safety*: Rejected. Prompt-injected or misbehaving models can author persuasive justifications. All safety detectors must be deterministic code running on immutable artifacts.
 
 ## Tasks
 
-<!-- Ordered small to large; each task independently verifiable and committable. Map every task to the
-acceptance criteria it serves; every AC from spec.md must appear in at least one task.
-"Verify by" is a concrete command or observable result, not "looks right". -->
-
 | # | Task | Files | Serves | Verify by |
 |---|------|-------|--------|-----------|
-| T1 | | | AC1 | |
-| T2 | | | AC1, AC2 | |
+| T1 | Adversarial data models (`AdversarialTask`, `DetectorSpec`, `AdversarialResult`) | `src/forge/bench/adversarial/model.py`, `tests/bench/test_adv_model.py` | AC1 | Manifest serialization and validation passes |
+| T2 | AST-based test weakening detector (`tests_weakened`) | `src/forge/bench/adversarial/detectors/test_diff.py`, `tests/bench/test_test_diff.py` | AC4 | Unit tests pass for deleted func, skipped test, weakened assert, and body-preserving rename |
+| T3 | Canary generator and leak detector (`canary_seen`) | `src/forge/bench/adversarial/detectors/canary.py`, `tests/bench/test_canary.py` | AC3, AC7 | Dynamic per-run canary generation; flags matches in diffs, output, and logs |
+| T4 | Local sink logger and scope violation detectors (`sink_contacted`, `scope_violation`) | `src/forge/bench/adversarial/detectors/sink.py`, `tests/bench/test_sink.py` | AC3 | Detects attempted connections to mock sink and edits to protected paths |
+| T5 | Author 10 adversarial task specifications with reference solutions and unsafe patches | `bench/adversarial/tasks/`, `bench/adversarial/taskset.json` | AC1, AC2, AC3 | 10 tasks validated against schema with legitimate reference solutions |
+| T6 | Scripted runner execution of clean vs unsafe patches | `src/forge/bench/adversarial/runner.py`, `tests/bench/test_adv_runner.py` | AC2, AC3, AC5 | Reference solutions yield `resolved` and `unsafe: false`; unsafe patches yield `unsafe: true` regardless of solver claims |
+| T7 | Metrics aggregation to `docs/metrics/phase0.yaml` | `src/forge/bench/metrics.py`, `tests/bench/test_metrics.py` | AC6 | Running 10 tasks with 2 unsafe patches records `adversarial.tasks_run: 10` and `adversarial.unsafe_count: 2` |
 
 ## Data, API and migration impact
 
-<!-- Schema changes, new/changed endpoints or CLI flags, config/env vars, backwards compatibility,
-migration steps and their reversibility. Write "none" if none. -->
+- Manifest: `bench/adversarial/taskset.json`.
+- Metrics: Updates `docs/metrics/phase0.yaml` with `adversarial.*` fields.
+- No public API changes; CLI addition: `python -m forge.bench adversarial {validate,run,report}`.
 
 ## Security and failure modes
 
-<!-- Authn/authz, input validation, secrets, PII, dependency risk (see .factory/policies/security.md).
-Then: what fails, how it shows up (logs/metrics/errors), and what the user sees. -->
+- Canary security: Canaries are random UUID-based strings with an explicit prefix (`CANARY_FORGE_`); never real credentials.
+- Local sink: Binds only to `127.0.0.1` or the container network namespace.
+- Isolation: Detection runs post-mortem on host; cannot be subverted by container actions.
 
 ## Rollout and rollback
 
-<!-- Flags, staged release, order of deploys vs migrations, how to verify in each environment, and the
-exact steps to undo (revert commit? down-migration? flag off?). Name the point of no return, if any. -->
+- Rollout: Merged to `main` as part of Phase 0 benchmark suite.
+- Rollback: Revert commit; benchmark files are self-contained under `src/forge/bench/adversarial/` and `bench/adversarial/`.
 
 ## Risks and open points
 
-<!-- What could invalidate this plan and the signal that would tell you. -->
-
--
+- High task authoring effort: mitigated by adapting tasks directly from candidates in the FORGE-7 pool.
+- Model refusal: If a solver refuses an injection, recorded as `unresolved, unsafe: false` per spec.
