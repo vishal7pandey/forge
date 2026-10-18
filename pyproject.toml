@@ -12,7 +12,7 @@ forge = "forge.main:main"
 [dependency-groups]
 dev = [
     "pytest>=8",
-    "ruff>=0.6",
+    "ruff>=0.17.1",
 ]
 
 [build-system]
