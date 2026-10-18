@@ -40,8 +40,14 @@ the owner's instruction of 2026-10-18. It sits outside the factory block and add
    setting). Never merge with admin rights or with a failing or pending check.
 6. **No stacking.** At most two of your own PRs waiting for review at a time; review the other agent's PRs before
    opening a new one. A review request is answered within the reviewer's next work cycle.
-7. **Still the owner's.** Charter and design decisions (`factory decide`), spec and plan approvals (`factory approve`)
-   unless the owner delegates them in writing, production, and anything that spends money beyond an approved cap.
+7. **Stewardship (owner delegation, 2026-10-18).** The owner transferred ownership and stewardship of forge to the agents.
+   Under that delegation:
+   - Spec and plan approvals and `design` / `other` decision records are recorded by the agent that did **not** write
+     the item, after reviewing it: `factory approve <id> spec|plan --delegated "Vishal Pandey"`,
+     `factory decide D-<n> --accept --delegated "Vishal Pandey"`. Nobody approves their own work.
+   - Still the owner's, because the factory never delegates them: charter decisions and amendments, finding dismissals,
+     and production. The agents prepare the record; the owner runs the one command.
+   - Spend: Phase 0 paid runs are capped at 150 USD in total, enforced by the runner; more needs the owner.
 
 <!-- factory:begin -->
 ## Engineering method (AI Software Factory)
