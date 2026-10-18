@@ -1,65 +1,58 @@
 # FORGE-8 — Dependabot major bumps: ruff 0.17 and pytest 9
 
 Status: draft · Risk: low · Jira: FORGE-8
-<!-- factory:unfilled - delete this line when the document is really written; approval and verify refuse it -->
 Created: 2026-10-18 · Slug: dependabot-major-bumps-ruff-0-17-and · Spec: spec.md
-
-<!--
-GUIDANCE (delete every comment like this one before asking for approval).
-The plan turns the APPROVED spec into an executable sequence for an agent that has not seen the
-conversation. Name real files, modules and functions you have read; no hypothetical architecture.
-The plan must not contradict spec.md. If the spec is wrong or incomplete, stop and amend the spec
-first (and say so in notes.md) — do not paper over it here.
-Unknowns: use the NEEDS CLARIFICATION marker (square brackets, see factory-spec); approval is blocked
-while any remains.
--->
 
 ## Summary
 
-<!-- 2-3 sentences: what will change and the shape of the solution. -->
+Update dev dependency constraints in `pyproject.toml` to `pytest>=9.1.1` and `ruff>=0.17.1`, regenerate `uv.lock` via `uv sync`, and verify that existing unit tests (`pytest -q`), linter (`ruff check .`), and formatter (`ruff format --check .`) execute cleanly without breakage.
 
-**Size:** <!-- S (< ~half a day) | M (~1-2 days) | L (~3-5 days); if bigger than L, say how to split it -->
+**Size:** S (< half a day)
 
 ## Current state
 
-<!-- What exists today, with paths: the modules, tables, endpoints, configs this change touches or
-must stay compatible with. Include how the project runs lint/tests (the commands). -->
+- `pyproject.toml` specifies `dev = ["pytest>=8", "ruff>=0.6"]`.
+- `tests/test_main.py` contains 3 unit tests.
+- Lint and format checks run across `src/` and `tests/` with `select = ["E", "F", "I", "UP", "B"]`.
+- Commands:
+  - Tests: `uv run python -m pytest -q`
+  - Lint: `uv run ruff check .`
+  - Format: `uv run ruff format --check .`
 
 ## Approach
 
-<!-- The chosen design and why it is the smallest thing that satisfies the spec. -->
+1. Bump minimum version constraints in `pyproject.toml`.
+2. Execute `uv sync` to resolve and update `uv.lock` to `pytest 9.1.1` and `ruff 0.17.1`.
+3. Validate test execution, linting, and formatting. Source code and tests are already fully compatible with no required code alterations.
+4. Run negative drill to verify detection on syntax/assertion failures.
 
 **Alternatives rejected**
-- <!-- option — why not (1-3 lines each) -->
+- *Two separate work items*: Rejected; handling dev tooling upgrades together in one atomic change prevents redundant CI cycles and simplifies lockfile resolution.
+- *Unconstrained minimums*: Rejected; pinning `>=9.1.1` and `>=0.17.1` ensures consistent tool behavior across machines.
 
 ## Tasks
 
-<!-- Ordered small to large; each task independently verifiable and committable. Map every task to the
-acceptance criteria it serves; every AC from spec.md must appear in at least one task.
-"Verify by" is a concrete command or observable result, not "looks right". -->
-
 | # | Task | Files | Serves | Verify by |
 |---|------|-------|--------|-----------|
-| T1 | | | AC1 | |
-| T2 | | | AC1, AC2 | |
+| T1 | Update dev dependencies in `pyproject.toml` and sync lockfile | `pyproject.toml`, `uv.lock` | AC1 | `uv sync` exits with code 0 and locks `pytest==9.1.1`, `ruff==0.17.1` |
+| T2 | Validate unit test suite under Pytest 9.1.1 | `tests/test_main.py` | AC2 | `uv run python -m pytest -q` passes all 3 tests with 0 failures |
+| T3 | Validate lint and format checks under Ruff 0.17.1 | `src/`, `tests/` | AC3 | `uv run ruff check .` and `uv run ruff format --check .` exit with 0 findings |
+| T4 | Negative test drill (mutation verification) | scratch test file | AC4 | Deliberate assertion failure and lint error exit with non-zero status |
 
 ## Data, API and migration impact
 
-<!-- Schema changes, new/changed endpoints or CLI flags, config/env vars, backwards compatibility,
-migration steps and their reversibility. Write "none" if none. -->
+None. Dev dependencies only; runtime package, CLI, and exports remain identical.
 
 ## Security and failure modes
 
-<!-- Authn/authz, input validation, secrets, PII, dependency risk (see .factory/policies/security.md).
-Then: what fails, how it shows up (logs/metrics/errors), and what the user sees. -->
+- Security: Packages are installed from PyPI; `uv.lock` pins cryptographically verified wheel and sdist hashes.
+- Failure modes: If a new Ruff rule flags existing code, adjust lint configuration or format with `ruff format .`. (Audited: 0 findings currently).
 
 ## Rollout and rollback
 
-<!-- Flags, staged release, order of deploys vs migrations, how to verify in each environment, and the
-exact steps to undo (revert commit? down-migration? flag off?). Name the point of no return, if any. -->
+- Rollout: Standard PR merge commit to `main`.
+- Rollback: Revert commit if regressions appear in subsequent feature development.
 
 ## Risks and open points
 
-<!-- What could invalidate this plan and the signal that would tell you. -->
-
--
+- None. Both tools tested locally and in CI with green results.

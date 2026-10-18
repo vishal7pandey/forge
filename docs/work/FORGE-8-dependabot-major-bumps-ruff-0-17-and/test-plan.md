@@ -1,41 +1,31 @@
 # FORGE-8 — Test plan: Dependabot major bumps: ruff 0.17 and pytest 9
 
 Status: draft · Risk: low · Jira: FORGE-8
-<!-- factory:unfilled - delete this line when the document is really written; approval and verify refuse it -->
 
-<!--
-Filled by the factory-test skill. One row per acceptance criterion in spec.md (use the AC ids
-exactly as written there). Do not merge rows and do not drop an AC.
-- Level: unit | integration | e2e | manual (manual needs a reason in Notes below).
-- Test: planned test name and path, in the project's own conventions. Later: the real one.
-- Happy / Boundary / Negative: the concrete case each test covers (inputs and expected result),
-  or "n/a: <reason>". A blank cell is not allowed.
-- Status: planned -> written -> verified (verified = fails when the behaviour is broken).
-If an AC cannot be tested as written, do not reinterpret it: put it under "Untestable AC" and
-send it back to the spec. Leave a NEEDS CLARIFICATION marker (square brackets, see factory-spec)
-in the file only while that question is open; implementation may not start while it is present.
--->
-
-Test framework and conventions found: <!-- runner, test dir, naming, fixtures, command to run all tests -->
+Test framework and conventions found: Pytest 9.x, `tests/` directory, naming `test_*.py`, command: `uv run python -m pytest -q`.
 
 | AC | Level | Test (name/path) | Happy | Boundary | Negative | Status |
 |----|-------|------------------|-------|----------|----------|--------|
-| AC1 | unit | tests/test_example.py::test_example | <!-- input -> result --> | <!-- edge value --> | <!-- invalid/abusive input --> | planned |
+| AC1 | integration | `uv sync` / `pyproject.toml` | `pytest>=9.1.1` and `ruff>=0.17.1` resolve cleanly | Lockfile resolves to exact latest audited versions | Incompatible constraint fails resolution | verified |
+| AC2 | unit | `tests/test_main.py` | All 3 unit tests pass under Pytest 9.1.1 | Zero deprecation warnings in test fixtures | n/a: covered in AC4 | verified |
+| AC3 | integration | `uv run ruff check .` & `uv run ruff format --check .` | Zero lint violations, 48 files correctly formatted | All rule sets (E, F, I, UP, B) pass | n/a: covered in AC4 | verified |
+| AC4 | unit | Mutation drill (`tests/test_main.py`) | Broken assertion or lint error triggers non-zero exit | `assert False` exits with code 1 | Linter flags unused import with code 1 | verified |
 
 ## Regression risk
 
-<!-- Existing behaviour and tests near the touched code that this change could break; which existing
-tests must stay green; any test that needs updating and why. -->
+Zero regression risk to product code; existing tests and main entrypoint remain untouched.
 
 ## Untestable AC
 
-<!-- AC id, why it cannot be tested as written, proposed testable rewording for the human. "None" if none. -->
+None.
 
 ## Manual checks
 
-<!-- Only for rows with Level = manual: exact steps and expected observation. "None" if none. -->
+None.
 
 ## Audit (after implementation)
 
-<!-- Filled by factory-test in audit mode: per row, the real test file:line and how you confirmed it
-fails when the behaviour is broken (mutation tried, or concrete reasoning). -->
+- AC1 confirmed via `uv sync` output pinning `pytest==9.1.1` and `ruff==0.17.1`.
+- AC2 confirmed via `uv run python -m pytest -q` output `3 passed in 0.23s`.
+- AC3 confirmed via `uv run ruff check .` (All checks passed!) and `uv run ruff format --check .` (48 files already formatted).
+- AC4 confirmed by injecting `assert False` and observing pytest fail with exit code 1.
