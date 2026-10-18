@@ -58,18 +58,25 @@ def _install(executor: Executor, profile: RepoProfile, cwd: Path) -> ExecResult 
     )
 
 
-def regression_set(executor, profile, cwd: Path, holdout: tuple[str, ...]) -> tuple[str, ...]:
-    """Tests outside the holdout that pass on this working copy."""
-    _run(executor, profile, cwd, (f"--junitxml={JUNIT_NAME}", "-o", "junit_family=xunit1"))
+def run_with_junit(executor, profile, cwd: Path, args: tuple[str, ...] = ()):
+    """Run the test command with a JUnit report; return (result, passed node ids)."""
+    junit = (f"--junitxml={JUNIT_NAME}", "-o", "junit_family=xunit1")
+    result = _run(executor, profile, cwd, (*junit, *args))
     report = cwd / JUNIT_NAME
     if not report.exists():
-        return ()
+        return result, []
     ids = junit_passed(report.read_text(encoding="utf-8"))
     report.unlink()
+    return result, ids
+
+
+def regression_set(executor, profile, cwd: Path, holdout: tuple[str, ...]) -> tuple[str, ...]:
+    """Tests outside the holdout that pass on this working copy."""
+    _, ids = run_with_junit(executor, profile, cwd)
     return tuple(sorted(i for i in ids if i.split("::", 1)[0] not in holdout))
 
 
-def write_holdout(store: GitRepoStore, c: Candidate, dest: Path, holdout: tuple[str, ...]) -> None:
+def write_holdout(store: GitRepoStore, c: Candidate | Task, dest: Path, holdout: tuple[str, ...]):
     for path in holdout:
         text = store.read_file(c.repo, c.solution_sha, path)
         target = dest / path
