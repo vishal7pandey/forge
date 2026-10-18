@@ -12,7 +12,6 @@ approvals:
     by: Vishal Pandey
     at: '2026-10-18'
   plan:
-    by: Vishal Pandey (delegated to agent)
+    by: Vishal Pandey
     at: '2026-10-18'
-    delegated: true
 pr: null
