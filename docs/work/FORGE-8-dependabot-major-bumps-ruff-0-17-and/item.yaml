@@ -1,0 +1,11 @@
+id: FORGE-8
+type: feature
+title: 'Dependabot major bumps: ruff 0.17 and pytest 9'
+slug: dependabot-major-bumps-ruff-0-17-and
+status: draft
+risk: low
+jira: FORGE-8
+branch: feature/forge-8-dependabot-major-bumps-ruff-0-17-and
+created: '2026-10-18'
+approvals: {}
+pr: null
