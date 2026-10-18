@@ -1,0 +1,11 @@
+id: FORGE-4
+type: feature
+title: 'LLM gateway core: model aliases, run context, usage ledger, per-run budget'
+slug: llm-gateway-core-model-aliases-run
+status: draft
+risk: medium
+jira: FORGE-4
+branch: feature/forge-4-llm-gateway-core-model-aliases-run
+created: '2026-10-18'
+approvals: {}
+pr: null
