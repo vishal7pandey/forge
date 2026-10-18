@@ -1,48 +1,53 @@
 ---
-purpose: "Forge turns a ticket into a pull request that a governed AI agent wrote in a sandbox, under policy and a budget, with verification published by the platform and a signed evidence bundle. This build proves Slice 1 of the design in ai-native-software-factory-design, for its owner as a learning lab, before anything else is added."
+purpose: "Find out, with measurements, whether a governed platform around coding agents produces safer changes than a thin integration of the same agents, at comparable correctness and cost, before building that platform. This is Phase 0 of the Forge design (ai-native-software-factory-design, doc 23), run by its owner as a learning lab."
 mode: active
 decision: D-001
 done:
   - id: C1
-    text: "Every model call in Forge goes through the gateway with a model alias, a per-run budget cap and a usage ledger row"
-    check: {work: FORGE-4}
-  - id: C2
-    text: "An implement-change agent run executes in an isolated sandbox with egress deny and opens a pull request on a target repository"
-    check: {jira: FORGE-5}
-  - id: C3
-    text: "Each run records its policy decisions, produces a signed evidence bundle and publishes pass or fail only as a Forge check run"
-    check: {jira: FORGE-6}
-  - id: C4
-    text: "An internal benchmark of tasks mined from merged pull requests of at least two public repositories runs in CI"
+    text: "A benchmark of at least 30 tasks mined from merged pull requests with tests, from the owner's repositories and two public ones, with the original tests held out as the oracle"
     check: {jira: FORGE-7}
-  - id: C5
-    text: "The benchmark resolved rate (hidden tests pass) reaches at least 0.3"
-    check: {metric: {file: docs/metrics/slice1.yaml, key: benchmark.resolved_rate, min: 0.3}}
-  - id: C6
-    text: "The benchmark cost per resolved task is recorded and stays at or below 5 US dollars"
-    check: {metric: {file: docs/metrics/slice1.yaml, key: benchmark.cost_per_resolved_usd, max: 5.0}}
+  - id: C2
+    text: "An adversarial set of 10 tasks, each with a deterministic detector for its unsafe outcome"
+    check: {jira: FORGE-9}
+  - id: C3
+    text: "The thin integration has run every benchmark and adversarial task, with resolved rate, cost and wall time recorded per task"
+    check: {metric: {file: docs/metrics/phase0.yaml, key: baseline.tasks_run, min: 40}}
+  - id: C4
+    text: "A Phase 0 report against hypotheses H1 to H3 of design doc 23 exists, with a proceed, narrow or stop decision record for the owner"
+    check: {file: docs/phase0/report.md}
 non_goals:
-  - "Multi-tenancy, SSO, BYOC or air-gapped deployment"
-  - "A web application beyond a minimal run view; the Claude Code plugin, hooks and dispatch (Phase 1)"
-  - "Autonomy above L2: agents open pull requests, humans review and merge"
-  - "Deploying anything to production, on Forge or on target repositories"
-  - "Go services, a marketplace, or any SDLC stage before implementation or after the pull request"
-parked: []
+  - "Forge platform code beyond the benchmark runner and scorer: gateway, sandboxed runs, policy and check run wait for the Phase 0 decision (FORGE-4, FORGE-5, FORGE-6)"
+  - "Validating enterprise demand, buyers or pricing; there are no customers or design partners in this build"
+  - "Tuning the thin integration to win or lose: it runs as a team would use it, with the repository's own AGENTS.md and skills"
+  - "Deploying anything, on Forge or on the benchmark repositories"
+parked:
+  - {item: "Slice 1 build (gateway, sandboxed run, policy, audit record, check run), pending the Phase 0 decision", jira: FORGE-1}
 ---
 # Project charter
 
-Forge implements the design in [ai-native-software-factory-design](https://github.com/vishal7pandey/ai-native-software-factory-design),
-starting with **Slice 1: ticket to verified pull request** (design `19-roadmap.md`, Phase S; Jira epic FORGE-1).
+Forge implements the design in [ai-native-software-factory-design](https://github.com/vishal7pandey/ai-native-software-factory-design).
+After an independent review (ANSFD-1), that design makes Phase 0 a **hard gate** (doc 23): the alternative to beat, the
+thin integration of existing agents, is measured before any platform is built. This charter covers only that gate.
 
-## Why these criteria
+## Why only Phase 0
 
-C1 to C4 are the slice's components, one ticket each. C5 and C6 are the slice exit bar. The design's exit bar is
-"30% of eligible tickets produce a PR merged with no more than small edits" on design-partner repositories. This build has
-no design partners, so Phase 0 (validation with partner teams) is replaced by a benchmark mined from public repositories
-(FORGE-7), and "merged with small edits" by its closest offline proxy: the hidden tests of the original merged PR pass. That
-proxy is weaker than real merges; the gap is accepted for a learning lab and named here so nobody reads C5 as more.
+A charter that already lists the slice components would authorise the build-out the review warns against: a sophisticated
+platform whose infrastructure hides whether it solves a real problem. Phase 0 can fail, and that is its value. The slice
+(FORGE-1) is parked until the owner's decision on the report.
 
-The 5 US dollar ceiling in C6 is a first guess, to be revised with data from the first benchmark run (a charter amendment).
+## The decision this charter ends with
+
+The report (C4) states, per hypothesis in doc 23, the measured values and thresholds:
+
+- **Stop** if the thin integration is already as safe on the adversarial set (H1 fails) and Forge's expected cost or
+  correctness gap can't be closed (H2 or H3 fails): fold the benchmark and adversarial set into the AI Software Factory.
+- **Narrow** if only the safety case holds: build the safety wrapper only.
+- **Proceed** otherwise: a charter amendment adds the slice criteria (gateway, sandboxed run, policy and audit record,
+  check run, and the slice exit bar of doc 19).
+
+Phase 0 measures the baseline only; Forge's own numbers on H1 to H3 come from the slice, against this baseline. The
+proceed decision is therefore a bet that the baseline leaves room (unsafe actions on the adversarial set, a correctness
+or review-effort gap), not proof that Forge closes it.
 
 ## Maintenance mode
 
