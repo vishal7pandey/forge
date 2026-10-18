@@ -74,20 +74,21 @@ Metrics (R11): a ten-line YAML emitter for flat nested mappings, so no YAML depe
 | T7 | Runner loop with spend cap and resume; results JSONL; metrics YAML; CLI `python -m forge.bench {mine,validate,build,run,report}` | new `runner.py`, `metrics.py`, `__main__.py` | AC8, AC9 | `test_cap_stops_new_tasks`, `test_metrics_after_scripted_run`; charter check reads `baseline.tasks_run` |
 | — | **PR A ends here** (offline only; CI covers all of it) | | | CI green; reviewer runs `python -m forge.bench run --solver scripted` on the fixture |
 | T8 | `DockerExecutor`: image `python:3.12-slim` + uv + node + Codex CLI (`@openai/codex`, pinned); `--network none` for oracle runs, bridge for install and solver; mounts; kill on timeout | new `docker.py`, `bench/Dockerfile` | AC5 (container variant) | integration test marked `docker`, skipped when the engine is down |
-| T9 | `CodexSolver`: `codex exec --json` with a fixed model and full-auto sandbox off inside the container (the container is the sandbox); parse token usage from the event stream; cost from a pinned price table `bench/prices.json` | new in `solvers.py`, `bench/prices.json` | AC10 | unit test on a recorded JSON output; manual run recorded in the test plan |
+| T9 | `forge.secrets` (env, then keyring) with a test using keyring's null backend; `CodexSolver`: `codex exec --json` with a fixed model and full-auto sandbox off inside the container (the container is the sandbox); parse token usage from the event stream; cost from a pinned price table `bench/prices.json` | new in `solvers.py`, `bench/prices.json` | AC10 | unit test on a recorded JSON output; manual run recorded in the test plan |
 | T10 | Choose two public repositories by the spec's criteria; record them in `bench/README.md` | new `bench/README.md`, `bench/sources.yaml` | AC11 | file lists repo, licence, candidate count |
 | T11 | Build the real task set: mine all five repositories, write Jira overrides, validate in Docker, freeze `bench/taskset-v1.json` with exclusions | new `bench/taskset-v1.json`, `bench/statements/` | AC11 | ≥ 30 validated tasks across ≥ 4 repositories, exclusion table in `bench/README.md` |
 | T12 | One real thin-integration run on one task (AC10); the full baseline run is FORGE-7's follow-up execution, gated by the key and the cap | — | AC10 | result line with non-zero cost recorded in `test-plan.md` |
 
 ## Data, API and migration impact
 
-New package and CLI only. New files under `bench/` (task set, statements, README) and `docs/metrics/phase0.yaml`. New
-environment variable `OPENAI_API_KEY` (documented in `.env.example`, never committed), plus `FORGE_BENCH_CAP_USD`
-(default 150) and `FORGE_BENCH_TASK_CEILING_USD` (default 3). No dependency added to `pyproject.toml`. Nothing to migrate.
+New package and CLI only. New files under `bench/` (task set, statements, README) and `docs/metrics/phase0.yaml`. Secret
+lookup `forge.secrets.get("OPENAI_API_KEY")`: environment variable first (CI, containers), else Windows Credential Manager
+(service `forge`) through `keyring`, the one new dependency (`keyring`, MIT, maintained by the jaraco/PyPA community).
+Settings `FORGE_BENCH_CAP_USD` (default 150) and `FORGE_BENCH_TASK_CEILING_USD` (default 3). Nothing to migrate.
 
 ## Security and failure modes
 
-- Secrets: only `OPENAI_API_KEY` reaches a solver container, read from the environment; the env allow-list is tested
+- Secrets: only `OPENAI_API_KEY` reaches a solver container, looked up on the host by `forge.secrets` and passed in as an env var; the env allow-list is tested
   (AC5). Results and logs never include environment values. The owner's `gh` token is used only by `GhPrSource` on the
   host for mining, never inside containers.
 - Untrusted code: candidate repositories' test suites run inside containers, oracle runs with network off.

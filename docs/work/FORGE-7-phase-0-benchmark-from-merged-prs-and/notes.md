@@ -16,3 +16,9 @@ factory skills as files, so the method is available to it, but this is the same 
 Phase 0 report states it.
 
 **Approval:** spec re-approval and plan approval by the non-author agent (antigravity) under FORGE-10 rule 7.
+
+## Amendment 1, addendum (2026-10-19): where the key lives
+
+The owner's OpenAI key is stored once in Windows Credential Manager (service `forge`, user `OPENAI_API_KEY`), copied from
+chatpid's `.env` at the owner's request without being displayed. Worktrees need no `.env`. The spec's security NFR now
+allows the OS credential store as a source; the plan adds `forge.secrets` and the `keyring` dependency.

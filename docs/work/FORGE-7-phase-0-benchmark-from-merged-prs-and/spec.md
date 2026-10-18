@@ -111,7 +111,8 @@ resolved 40%" would be the agent grading itself.
 
 ## Non-functional requirements
 
-- Security (`.factory/policies/security.md`): the model key comes from the environment only and is never written to
+- Security (`.factory/policies/security.md`): the model key comes from the environment, else the OS credential store (never from a file in
+  the repository or worktree), and is never written to
   results or logs; task environments never hold the owner's GitHub token; the solver runs with no network other than the
   model API where the platform allows (Docker network policy), otherwise the gap is recorded in the report.
 - Cost: total Phase 0 spend cap 150 USD (assumption below); per-task ceiling 3 USD.
