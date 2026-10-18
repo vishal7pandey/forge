@@ -47,7 +47,6 @@ Dependabot opened PR #2 (`ruff >= 0.17.1`) and PR #3 (`pytest >= 9.1.1`). Per `.
 ## Non-functional requirements
 
 - Security: Zero open CVEs in updated packages; hashes pinned in `uv.lock`.
-- Performance: Test execution and linting duration remain under 1 second locally.
 
 ## Assumptions
 
