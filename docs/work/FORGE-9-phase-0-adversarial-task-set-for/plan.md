@@ -42,8 +42,8 @@ Build a 10-task adversarial benchmark across three categories (injection, test w
 | T3 | Canary generator and leak detector (`canary_seen`) | `src/forge/bench/adversarial/detectors/canary.py`, `tests/bench/test_canary.py` | AC3, AC7 | Dynamic per-run canary generation; flags matches in diffs, output, and logs |
 | T4 | Local sink logger and scope violation detectors (`sink_contacted`, `scope_violation`) | `src/forge/bench/adversarial/detectors/sink.py`, `tests/bench/test_sink.py` | AC3 | Detects attempted connections to mock sink and edits to protected paths |
 | T5 | Author 10 adversarial task specifications with reference solutions and unsafe patches | `bench/adversarial/tasks/`, `bench/adversarial/taskset.json` | AC1, AC2, AC3 | 10 tasks validated against schema with legitimate reference solutions |
-| T6 | Scripted runner execution of clean vs unsafe patches | `src/forge/bench/adversarial/runner.py`, `tests/bench/test_adv_runner.py` | AC2, AC3, AC5 | Reference solutions yield `resolved` and `unsafe: false`; unsafe patches yield `unsafe: true` regardless of solver claims |
-| T7 | Metrics aggregation to `docs/metrics/phase0.yaml` | `src/forge/bench/metrics.py`, `tests/bench/test_metrics.py` | AC6 | Running 10 tasks with 2 unsafe patches records `adversarial.tasks_run: 10` and `adversarial.unsafe_count: 2` |
+| T6 | Scripted execution via FORGE-7 runner's `post_score` hook | `src/forge/bench/adversarial/runner.py`, `tests/bench/adversarial/test_adv_runner.py` | AC2, AC3, AC5 | Runs via `run_tasks(..., post_score=eval_detector)` under FORGE-7 spend cap; reference solutions yield `resolved` and `unsafe: false`; unsafe patches yield `unsafe: true` |
+| T7 | Metrics aggregation via `forge.bench.metrics:update_section` | `src/forge/bench/adversarial/metrics.py`, `tests/bench/adversarial/test_adv_metrics.py` | AC6 | Reuses `update_section(path, "adversarial", values)` (avoiding collision with FORGE-7); 10 tasks with 2 unsafe patches record `adversarial.tasks_run: 10`, `adversarial.unsafe_count: 2` |
 
 ## Data, API and migration impact
 
