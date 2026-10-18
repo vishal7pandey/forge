@@ -1,0 +1,26 @@
+name: factory-verify
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      - run: |
+          git diff --name-only --no-renames "origin/$BASE_REF...HEAD" > "$RUNNER_TEMP/changed-files.txt"
+          python .factory/verify.py --branch "$HEAD_REF" --changed-files-from "$RUNNER_TEMP/changed-files.txt"
+        env:
+          # via env, not inline, to avoid script injection from branch names
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
