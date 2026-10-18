@@ -2,7 +2,7 @@ id: FORGE-7
 type: feature
 title: Phase 0 benchmark from merged PRs and thin-integration baseline run
 slug: phase-0-benchmark-from-merged-prs-and
-status: spec-approved
+status: plan-approved
 risk: medium
 jira: FORGE-7
 branch: feature/forge-7-phase-0-benchmark-from-merged-prs-and
@@ -11,4 +11,8 @@ approvals:
   spec:
     by: Vishal Pandey
     at: '2026-10-18'
+  plan:
+    by: Vishal Pandey (delegated to agent)
+    at: '2026-10-18'
+    delegated: true
 pr: null
