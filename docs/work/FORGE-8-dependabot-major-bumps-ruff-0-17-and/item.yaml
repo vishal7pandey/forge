@@ -8,4 +8,4 @@ jira: FORGE-8
 branch: feature/forge-8-dependabot-major-bumps-ruff-0-17-and
 created: '2026-10-18'
 approvals: {}
-pr: null
+pr: 'https://github.com/vishal7pandey/forge/pull/9'
